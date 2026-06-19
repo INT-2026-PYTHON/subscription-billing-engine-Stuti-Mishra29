@@ -22,6 +22,9 @@ class GSTCalculator(TaxCalculator):
         #   - Validate each rate is Decimal in [0, 1].
         #   - Validate cgst + sgst == igst (sanity check on Indian GST setup).
         #   - Store on self.
+        self.cgst = cgst
+        self.sgst = sgst
+        self.igst = igst
         raise NotImplementedError("Day 1: implement GSTCalculator.__init__")
 
     def apply(self, taxable: Money, context: TaxContext) -> TaxBreakdown:
@@ -29,5 +32,22 @@ class GSTCalculator(TaxCalculator):
         #   - Decide intra vs inter-state from context.
         #     intra = bool(context.customer_state) and context.customer_state == context.seller_state
         #   - If intra: components = [("CGST X%", taxable*cgst), ("SGST Y%", taxable*sgst)], total = sum
-        #   - Else:     components = [("IGST Z%", taxable*igst)],                            total = igst leg
-        raise NotImplementedError("Day 1: implement GSTCalculator.apply")
+        #   - Else:     components = [("IGST Z%", taxable*igst)], 
+        #                            total = igst leg
+        intra=context.customer_state == context.seller_state
+        if intra:
+            cgst_amount = taxable * self.cgst
+            sgst_amount = taxable * self.sgst
+            return TaxBreakdown(
+                components=[
+                    (f"CGST {self.cgst * Decimal('100')}%", cgst_amount),
+                    (f"SGST {self.sgst * Decimal('100')}%", sgst_amount)
+                ],
+                total=cgst_amount + sgst_amount
+            )
+            igst_amount = taxable * self.igst
+            return TaxBreakdown(
+                components=[(f"IGST {self.igst * Decimal('100')}%", igst_amount)],
+                total=igst_amount
+            )
+        

@@ -17,7 +17,16 @@ class Freemium(PricingStrategy):
     def __init__(self, free_quota: int, overage_strategy: PricingStrategy) -> None:
         # TODO Day 1
         raise NotImplementedError("Day 1: implement Freemium.__init__")
+        if free_quota < 0:
+            raise ValueError("Freemium free_quota must be non-negative")
+        self.free_quota = free_quota
+        self.overage_strategy = overage_strategy
+
 
     def calculate(self, quantity: int) -> Money:
         # TODO Day 1
         raise NotImplementedError("Day 1: implement Freemium.calculate")
+        currency = self.overage_strategy.calculate(1).currency  # Get currency from inner strategy
+        if quantity <= self.free_quota:
+            return Money.zero(currency)  # Free if within free_quota
+        return self.overage_strategy.calculate(quantity - self.free_quota)  # Delegate overage to inner strategy
