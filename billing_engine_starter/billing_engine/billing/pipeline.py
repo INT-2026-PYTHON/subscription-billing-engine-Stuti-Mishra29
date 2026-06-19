@@ -39,4 +39,60 @@ def build_invoice(
 ) -> Invoice:
     """Pure function. Returns an Invoice (id=None, status=DRAFT) ready to be persisted."""
     # TODO Day 2
-    raise NotImplementedError("Day 2: implement build_invoice")
+    #1. Base Charge
+    subtotal = strategy.calculate(usage_quantity)
+    #2. Discount
+    if discount is not None:
+        discount_total = discount.apply(subtotal, DiscountContext(invoice_count_so_far=invoice_count_so_far))
+    else:
+        discount_total = Money.zero(subtotal.currency)
+    #3. Taxable Amount
+    taxable=subtotal - discount_total
+    #4. Taxes
+    tax_breakdown = tax_calc.apply(taxable, tax_context)
+    #5. Total
+    total = taxable + tax_breakdown.total
+    line_item = [
+        InvoiceLineItem( 
+        id=None,
+        invoice_id=None,
+        description="Base charge",
+        amount=subtotal,
+        kind=LineItemKind.BASE,
+    )
+    ]
+    if not discount_total.is_zero():
+        line_item.append(
+            InvoiceLineItem(
+                id=None,
+                invoice_id=None,
+                description="Discount",
+                amount=-discount_total,  # negative because it's a discount
+                kind=LineItemKind.DISCOUNT,
+            )
+        )
+    if not tax_breakdown.total.is_zero():
+        line_item.append(
+            InvoiceLineItem(
+                id=None,
+                invoice_id=None,
+                description="Tax",
+                amount=tax_breakdown.total,
+                kind=LineItemKind.TAX,
+            )
+        )
+    return Invoice(
+        id=None,
+        subscription_id=subscription.id,
+        period_start=period_start,
+        period_end=period_end,
+        line_items=line_item,
+        total=total,
+        status=InvoiceStatus.DRAFT,
+        line_items=line_items,
+    )
+
+
+
+
+        
